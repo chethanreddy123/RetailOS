@@ -1,0 +1,150 @@
+'use client'
+
+import Link from 'next/link'
+import { usePathname, useRouter } from 'next/navigation'
+import { useDispatch, useSelector } from 'react-redux'
+import { clearAuth } from '@/store/authSlice'
+import type { RootState } from '@/store'
+import { cn } from '@/lib/utils'
+import {
+  Receipt, Package, ClipboardList, BarChart2,
+  Settings, LogOut, Plus,
+} from 'lucide-react'
+
+const NAV = [
+  { href: '/billing',   label: 'Billing',   Icon: Receipt },
+  { href: '/inventory', label: 'Inventory', Icon: Package },
+  { href: '/orders',    label: 'Orders',    Icon: ClipboardList },
+  { href: '/reports',   label: 'Reports',   Icon: BarChart2 },
+  { href: '/admin',     label: 'Admin',     Icon: Settings },
+]
+
+export default function Sidebar() {
+  const pathname = usePathname()
+  const router   = useRouter()
+  const dispatch = useDispatch()
+  const shopName = useSelector((s: RootState) => s.auth.shopName)
+
+  const activeNav = NAV.find(({ href }) => pathname.startsWith(href))
+
+  function logout() {
+    dispatch(clearAuth())
+    router.replace('/login')
+  }
+
+  return (
+    <div className="flex h-screen shrink-0">
+
+      {/* ── Icon rail ─────────────────────────── */}
+      <aside className="flex flex-col w-[52px] shrink-0 bg-[#F0F0F0] items-center pt-3 pb-4 gap-1">
+
+        {/* Logo */}
+        <div className="w-8 h-8 rounded-xl bg-[#111] flex items-center justify-center mb-3 shrink-0">
+          <span className="text-white text-[11px] font-bold tracking-tight">R</span>
+        </div>
+
+        {/* Nav icons */}
+        {NAV.map(({ href, Icon }) => {
+          const active = pathname.startsWith(href)
+          return (
+            <Link
+              key={href}
+              href={href}
+              title={href.slice(1)}
+              className={cn(
+                'w-8 h-8 flex items-center justify-center rounded-xl transition-all shrink-0',
+                active ? 'bg-[#111] text-white' : 'text-[#999] hover:bg-black/[0.06] hover:text-[#333]'
+              )}
+            >
+              <Icon strokeWidth={active ? 2 : 1.5} className="w-[16px] h-[16px]" />
+            </Link>
+          )
+        })}
+
+        <div className="flex-1" />
+
+        {/* User avatar */}
+        <button
+          onClick={logout}
+          title="Sign out"
+          className="w-7 h-7 rounded-full bg-[#555] flex items-center justify-center text-white text-[10px] font-semibold hover:bg-[#111] transition-colors shrink-0"
+        >
+          {shopName?.[0]?.toUpperCase() ?? 'U'}
+        </button>
+      </aside>
+
+      {/* ── Text panel ────────────────────────── */}
+      <aside className="flex flex-col w-[208px] shrink-0 bg-white border-r border-[#EBEBEB]">
+
+        {/* Header — shop name + active page tab */}
+        <div className="px-4 pt-[14px] border-b border-[#EBEBEB]">
+          <div className="flex items-center justify-between mb-[10px]">
+            <p className="text-[13px] font-semibold text-[#111] truncate leading-tight">
+              {shopName ?? 'RetailOS'}
+            </p>
+            <LogOut
+              strokeWidth={1.5}
+              onClick={logout}
+              className="w-[13px] h-[13px] text-[#CCCCCC] shrink-0 cursor-pointer hover:text-[#333] transition-colors ml-2"
+            />
+          </div>
+          {/* Active page tab — underline style like the reference */}
+          <div className="flex gap-4">
+            {activeNav && (
+              <span className="text-[12px] font-medium text-[#111] pb-[9px] border-b-[1.5px] border-[#111]">
+                {activeNav.label}
+              </span>
+            )}
+            <span className="text-[12px] text-[#BBBBBB] pb-[9px]">RetailOS</span>
+          </div>
+        </div>
+
+        {/* Nav items */}
+        <nav className="flex-1 px-2 py-2 space-y-[1px] overflow-y-auto">
+          {NAV.map(({ href, label, Icon }) => {
+            const active = pathname.startsWith(href)
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={cn(
+                  'group flex items-center gap-2 px-2 py-[6px] rounded-md transition-colors',
+                  active ? 'bg-[#F2F2F2]' : 'hover:bg-[#F7F7F7]'
+                )}
+              >
+                <Icon
+                  strokeWidth={active ? 2 : 1.5}
+                  className={cn(
+                    'w-[14px] h-[14px] shrink-0 transition-colors',
+                    active ? 'text-[#111]' : 'text-[#AAAAAA] group-hover:text-[#333]'
+                  )}
+                />
+                <span className={cn(
+                  'flex-1 text-[13px] transition-colors',
+                  active ? 'text-[#111] font-semibold' : 'text-[#666] group-hover:text-[#111]'
+                )}>
+                  {label}
+                </span>
+                <Plus
+                  strokeWidth={1.5}
+                  className="w-[13px] h-[13px] text-[#DDDDDD] group-hover:text-[#AAAAAA] transition-colors"
+                />
+              </Link>
+            )
+          })}
+        </nav>
+
+        {/* Sign out row */}
+        <div className="px-2 py-2.5 border-t border-[#F0F0F0]">
+          <button
+            onClick={logout}
+            className="w-full flex items-center gap-2 px-2 py-[6px] rounded-md text-[12px] text-[#AAAAAA] hover:bg-[#F7F7F7] hover:text-[#333] transition-colors"
+          >
+            <LogOut strokeWidth={1.5} className="w-[14px] h-[14px] shrink-0" />
+            <span>Sign out</span>
+          </button>
+        </div>
+      </aside>
+    </div>
+  )
+}
