@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { Geist } from 'next/font/google'
 import './globals.css'
 import { Providers } from './providers'
-import { Toaster } from '@/components/ui/sonner'
+import ToasterClient from './toaster-client'
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-geist' })
 
@@ -17,8 +17,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen bg-background text-foreground antialiased" suppressHydrationWarning>
         <Providers>
           {children}
-          <Toaster richColors position="top-right" />
         </Providers>
+        <ToasterClient />
       </body>
     </html>
   )
