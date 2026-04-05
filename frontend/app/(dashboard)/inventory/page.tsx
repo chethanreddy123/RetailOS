@@ -18,7 +18,7 @@ export default function InventoryPage() {
   const [page, setPage] = useState(1)
 
   useEffect(() => {
-    api.listInventory().then(setRows).finally(() => setLoading(false))
+    api.listInventory().then(d => setRows(d ?? [])).finally(() => setLoading(false))
   }, [])
 
   useEffect(() => { setPage(1) }, [q])

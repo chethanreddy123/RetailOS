@@ -5,11 +5,19 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"reflect"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
 func writeJSON(w http.ResponseWriter, status int, v any) {
+	// Never encode nil slices as JSON null — return [] instead.
+	if v != nil {
+		rv := reflect.ValueOf(v)
+		if rv.Kind() == reflect.Slice && rv.IsNil() {
+			v = []struct{}{}
+		}
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(v)
