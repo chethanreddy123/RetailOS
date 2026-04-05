@@ -35,8 +35,8 @@ interface LineItemProps {
   isInState: boolean
 }
 
-const cellInput = "h-7 px-2 text-[12px] border border-[#E8E8E8] rounded-md bg-white focus:outline-none focus:border-[#CCCCCC] transition-colors w-full"
-const cellSelect = "h-7 px-2 text-[12px] border border-[#E8E8E8] rounded-md bg-white focus:outline-none focus:border-[#CCCCCC] transition-colors w-full appearance-none cursor-pointer"
+const cellInput = "h-7 px-2 text-[12px] border border-[#E8E8E8] rounded-md bg-white focus:outline-none focus:border-[#AAAAAA] transition-colors w-full"
+const cellSelect = "h-7 px-2 text-[12px] border border-[#E8E8E8] rounded-md bg-white focus:outline-none focus:border-[#AAAAAA] transition-colors w-full cursor-pointer"
 
 export function NewLineItem({ onAdd, isInState }: { onAdd: () => void; isInState: boolean }) {
   const dispatch = useDispatch()
@@ -110,128 +110,120 @@ export function NewLineItem({ onAdd, isInState }: { onAdd: () => void; isInState
   const dropdownOpen = focused && (products.length > 0 || searching)
 
   return (
-    <tr className="border-b border-[#F7F7F7] bg-[#FAFAFA]">
-      {/* Product search */}
-      <td className="py-2 px-3 relative">
-        <input
-          className={`${cellInput} w-48`}
-          placeholder="Search product…"
-          value={query}
-          onChange={e => handleQueryChange(e.target.value)}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
-          onKeyDown={e => { if (e.key === 'Enter' && selectedBatch) addToCart() }}
-        />
-        {dropdownOpen && (
-          <div className="absolute z-30 top-full left-3 mt-1 w-72 bg-white border border-[#EBEBEB] rounded-lg shadow-md overflow-hidden">
-            {searching && products.length === 0 && (
-              <div className="px-3 py-2.5 text-[12px] text-[#BBBBBB]">Searching…</div>
+    <tr className="border-t border-[#EBEBEB] bg-[#FAFAFA]">
+      <td colSpan={10} className="px-3 py-2.5">
+        <div className="flex items-center gap-2 relative">
+
+          {/* Product search */}
+          <div className="relative flex-shrink-0">
+            <input
+              className="h-8 px-3 text-[13px] border border-[#E0E0E0] rounded-lg bg-white focus:outline-none focus:border-[#AAAAAA] transition-colors w-52 placeholder:text-[#CCCCCC]"
+              placeholder="Search product…"
+              value={query}
+              onChange={e => handleQueryChange(e.target.value)}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
+              onKeyDown={e => { if (e.key === 'Enter' && selectedBatch) addToCart() }}
+            />
+            {dropdownOpen && (
+              <div className="absolute z-30 top-full left-0 mt-1 w-64 bg-white border border-[#EBEBEB] rounded-lg shadow-lg overflow-hidden">
+                {searching && products.length === 0 && (
+                  <div className="px-3 py-2.5 text-[12px] text-[#BBBBBB]">Searching…</div>
+                )}
+                {products.map(p => (
+                  <button
+                    key={p.product_id}
+                    type="button"
+                    className="w-full text-left px-3 py-2 hover:bg-[#F5F5F5] transition-colors border-b border-[#F5F5F5] last:border-0"
+                    onMouseDown={e => { e.preventDefault(); selectProduct(p) }}
+                  >
+                    <p className="text-[13px] font-medium text-[#111]">{p.name}</p>
+                    <p className="text-[11px] text-[#999]">{p.company_name}</p>
+                  </button>
+                ))}
+              </div>
             )}
-            {products.map(p => (
-              <button
-                key={p.product_id}
-                type="button"
-                className="w-full text-left px-3 py-2.5 hover:bg-[#F5F5F5] transition-colors"
-                // e.preventDefault() stops the input from losing focus on click
-                // so onBlur never fires and the dropdown stays open during selection
-                onMouseDown={e => { e.preventDefault(); selectProduct(p) }}
-              >
-                <p className="text-[13px] font-medium text-[#111]">{p.name}</p>
-                <p className="text-[11px] text-[#999]">{p.company_name}</p>
-              </button>
-            ))}
           </div>
-        )}
-      </td>
 
-      {/* Batch select */}
-      <td className="py-2 px-3">
-        {batches.length > 0 ? (
-          <select
-            className={`${cellSelect} w-36`}
-            value={selectedBatch?.batch_id ?? ''}
-            onChange={e => {
-              const b = batches.find(b => b.batch_id === e.target.value)
-              if (b) selectBatch(b)
-            }}
-          >
-            <option value="">Select…</option>
-            {batches.map(b => (
-              <option key={b.batch_id} value={b.batch_id}>
-                {b.batch_no} · {fmtDate(b.expiry_date)}
-              </option>
-            ))}
-          </select>
-        ) : (
-          <span className="text-[12px] text-[#CCCCCC]">—</span>
-        )}
-      </td>
+          {/* Batch — appears after product selected */}
+          {batches.length > 0 && (
+            <select
+              className="h-8 px-2 text-[12px] border border-[#E0E0E0] rounded-lg bg-white focus:outline-none focus:border-[#AAAAAA] transition-colors w-44 flex-shrink-0"
+              value={selectedBatch?.batch_id ?? ''}
+              onChange={e => {
+                const b = batches.find(b => b.batch_id === e.target.value)
+                if (b) selectBatch(b)
+              }}
+            >
+              <option value="">Select batch…</option>
+              {batches.map(b => (
+                <option key={b.batch_id} value={b.batch_id}>
+                  {b.batch_no} · {fmtDate(b.expiry_date)}
+                </option>
+              ))}
+            </select>
+          )}
 
-      {/* Expiry */}
-      <td className="py-2 px-3 text-[12px] text-[#999] whitespace-nowrap">
-        {selectedBatch ? fmtDate(selectedBatch.expiry_date) : '—'}
-      </td>
+          {/* Fields — appear after batch selected */}
+          {selectedBatch && (
+            <>
+              <span className="text-[12px] text-[#AAAAAA] flex-shrink-0">
+                MRP {fmtCurrency(selectedBatch.mrp)}
+              </span>
 
-      {/* MRP */}
-      <td className="py-2 px-3 text-[12px] text-[#999]">
-        {selectedBatch ? fmtCurrency(selectedBatch.mrp) : '—'}
-      </td>
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                <span className="text-[11px] text-[#BBBBBB]">₹</span>
+                <input
+                  type="number" min={0} step={0.01}
+                  className="h-8 w-20 px-2 text-[13px] text-right border border-[#E0E0E0] rounded-lg bg-white focus:outline-none focus:border-[#AAAAAA] transition-colors"
+                  value={salePrice || ''}
+                  placeholder="price"
+                  onChange={e => setSalePrice(parseFloat(e.target.value) || 0)}
+                />
+              </div>
 
-      {/* Sale price */}
-      <td className="py-2 px-3">
-        <input
-          type="number" min={0} step={0.01}
-          className={`${cellInput} w-20 text-right`}
-          value={salePrice || ''}
-          onChange={e => setSalePrice(parseFloat(e.target.value) || 0)}
-          disabled={!selectedBatch}
-        />
-      </td>
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                <span className="text-[11px] text-[#BBBBBB]">Qty</span>
+                <input
+                  type="number" min={1} max={selectedBatch.available_stock}
+                  className="h-8 w-14 px-2 text-[13px] text-right border border-[#E0E0E0] rounded-lg bg-white focus:outline-none focus:border-[#AAAAAA] transition-colors"
+                  value={qty}
+                  onChange={e => setQty(Math.max(1, parseInt(e.target.value) || 1))}
+                  onKeyDown={e => { if (e.key === 'Enter') addToCart() }}
+                />
+              </div>
 
-      {/* Qty */}
-      <td className="py-2 px-3">
-        <input
-          type="number" min={1} max={selectedBatch?.available_stock ?? 1}
-          className={`${cellInput} w-14 text-right`}
-          value={qty}
-          onChange={e => setQty(Math.max(1, parseInt(e.target.value) || 1))}
-          disabled={!selectedBatch}
-          onKeyDown={e => { if (e.key === 'Enter' && selectedBatch) addToCart() }}
-        />
-      </td>
+              <select
+                className="h-8 px-2 text-[12px] border border-[#E0E0E0] rounded-lg bg-white focus:outline-none w-16 flex-shrink-0"
+                value={String(gstRate)}
+                onChange={e => setGstRate(parseInt(e.target.value) as GSTRate)}
+              >
+                {GST_RATES.map(r => (
+                  <option key={r} value={String(r)}>{r}%</option>
+                ))}
+              </select>
 
-      {/* GST */}
-      <td className="py-2 px-3">
-        <select
-          className={`${cellSelect} w-16`}
-          value={String(gstRate)}
-          onChange={e => setGstRate(parseInt(e.target.value) as GSTRate)}
-        >
-          {GST_RATES.map(r => (
-            <option key={r} value={String(r)}>{r}%</option>
-          ))}
-        </select>
-      </td>
+              <span className="text-[11px] text-[#AAAAAA] flex-shrink-0">
+                stock: {selectedBatch.available_stock}
+              </span>
 
-      {/* Stock */}
-      <td className="py-2 px-3 text-[12px] text-[#999] text-right">
-        {selectedBatch?.available_stock ?? '—'}
-      </td>
+              <span className="text-[13px] font-semibold text-[#111] flex-shrink-0 ml-1">
+                {fmtCurrency(lineTotal)}
+              </span>
+            </>
+          )}
 
-      {/* Line total */}
-      <td className="py-2 px-3 text-right text-[12px] font-medium text-[#111]">
-        {selectedBatch ? fmtCurrency(lineTotal) : '—'}
-      </td>
-
-      {/* Add */}
-      <td className="py-2 px-3">
-        <button
-          disabled={!selectedBatch}
-          onClick={addToCart}
-          className="h-7 px-3 text-[11px] font-medium bg-[#111] text-white rounded-md disabled:opacity-30 hover:bg-[#333] transition-colors"
-        >
-          Add
-        </button>
+          {/* Add button — right side */}
+          <div className="ml-auto flex-shrink-0">
+            <button
+              disabled={!selectedBatch}
+              onClick={addToCart}
+              className="h-8 px-4 text-[12px] font-medium bg-[#111] text-white rounded-lg disabled:bg-[#E5E5E5] disabled:text-[#BBBBBB] hover:bg-[#333] transition-colors"
+            >
+              + Add
+            </button>
+          </div>
+        </div>
       </td>
     </tr>
   )
@@ -250,16 +242,16 @@ export default function LineItem({
   return (
     <tr className="border-b border-[#F7F7F7] group hover:bg-[#FAFAFA] transition-colors">
       <td className="py-2.5 px-3">
-        <p className="text-[13px] font-medium text-[#111]">{productName}</p>
+        <p className="text-[13px] font-medium text-[#111] truncate">{productName}</p>
         <p className="text-[11px] text-[#AAAAAA]">{batchNo}</p>
       </td>
-      <td className="py-2.5 px-3 text-[12px] text-[#999]">{batchNo}</td>
-      <td className="py-2.5 px-3 text-[12px] text-[#999] whitespace-nowrap">{fmtDate(expiryDate)}</td>
-      <td className="py-2.5 px-3 text-[12px] text-[#999]">{fmtCurrency(mrp)}</td>
+      <td className="py-2.5 px-3 text-[12px] text-[#888] truncate">{batchNo}</td>
+      <td className="py-2.5 px-3 text-[12px] text-[#888] whitespace-nowrap">{fmtDate(expiryDate)}</td>
+      <td className="py-2.5 px-3 text-[12px] text-[#888]">{fmtCurrency(mrp)}</td>
       <td className="py-2.5 px-3">
         <input
           type="number" min={0} step={0.01}
-          className={`${cellInput} w-20 text-right`}
+          className={`${cellInput} text-right`}
           value={salePrice}
           onChange={e => dispatch(updateSalePrice({ batchId: id, salePrice: parseFloat(e.target.value) || 0 }))}
         />
@@ -267,14 +259,14 @@ export default function LineItem({
       <td className="py-2.5 px-3">
         <input
           type="number" min={1} max={availableStock}
-          className={`${cellInput} w-14 text-right`}
+          className={`${cellInput} text-right`}
           value={qty}
           onChange={e => dispatch(updateQty({ batchId: id, qty: Math.max(1, parseInt(e.target.value) || 1) }))}
         />
       </td>
       <td className="py-2.5 px-3">
         <select
-          className={`${cellSelect} w-16`}
+          className={cellSelect}
           value={String(gstRate)}
           onChange={e => dispatch(updateGstRate({ batchId: id, gstRate: parseInt(e.target.value) as GSTRate }))}
         >
@@ -283,11 +275,11 @@ export default function LineItem({
           ))}
         </select>
       </td>
-      <td className="py-2.5 px-3 text-[12px] text-[#999] text-right">{availableStock}</td>
-      <td className="py-2.5 px-3 text-right text-[13px] font-medium text-[#111]">{fmtCurrency(lineTotal)}</td>
-      <td className="py-2.5 px-3">
+      <td className="py-2.5 px-3 text-[12px] text-[#555] text-center font-medium">{availableStock}</td>
+      <td className="py-2.5 px-3 text-right text-[13px] font-semibold text-[#111]">{fmtCurrency(lineTotal)}</td>
+      <td className="py-2.5 px-3 text-center">
         <button
-          className="text-[12px] text-[#DDDDDD] hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+          className="text-[13px] text-[#DDDDDD] hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
           onClick={() => dispatch(removeItem(id))}
         >
           ✕
