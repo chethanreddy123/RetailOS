@@ -67,6 +67,7 @@ export default function Sidebar() {
         <button
           onClick={logout}
           title="Sign out"
+          suppressHydrationWarning
           className="w-7 h-7 rounded-full bg-[#555] flex items-center justify-center text-white text-[10px] font-semibold hover:bg-[#111] transition-colors shrink-0"
         >
           {shopName?.[0]?.toUpperCase() ?? 'U'}
@@ -79,7 +80,7 @@ export default function Sidebar() {
         {/* Header — shop name + active page tab */}
         <div className="px-4 pt-[14px] border-b border-[#EBEBEB]">
           <div className="flex items-center justify-between mb-[10px]">
-            <p className="text-[13px] font-semibold text-[#111] truncate leading-tight">
+            <p suppressHydrationWarning className="text-[13px] font-semibold text-[#111] truncate leading-tight">
               {shopName ?? 'RetailOS'}
             </p>
             <LogOut
