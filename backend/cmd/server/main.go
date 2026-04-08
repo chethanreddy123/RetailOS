@@ -35,6 +35,7 @@ func main() {
 	// Handlers
 	authHandler := handlers.NewAuthHandler(pool, cfg.JWTSecret)
 	adminHandler := handlers.NewAdminHandler(pool, cfg.DatabaseURL)
+	superAdminHandler := handlers.NewSuperAdminHandler(pool, cfg.JWTSecret, cfg.AdminSecretKey)
 	inventoryHandler := handlers.NewInventoryHandler(pool)
 	customerHandler := handlers.NewCustomerHandler(pool)
 	orderHandler := handlers.NewOrderHandler(pool)
@@ -58,7 +59,11 @@ func main() {
 	// Auth
 	r.Post("/auth/login", authHandler.Login)
 
-	// Super admin (protected by X-Admin-Key header)
+	// Super admin auth (public — email+password login & seed)
+	r.Post("/superadmin/login", superAdminHandler.Login)
+	r.With(middleware.AdminAuth(cfg.AdminSecretKey)).Post("/superadmin/seed", superAdminHandler.Seed)
+
+	// Super admin tenant management (protected by X-Admin-Key header)
 	r.Group(func(r chi.Router) {
 		r.Use(middleware.AdminAuth(cfg.AdminSecretKey))
 		r.Post("/admin/tenants", adminHandler.CreateTenant)
