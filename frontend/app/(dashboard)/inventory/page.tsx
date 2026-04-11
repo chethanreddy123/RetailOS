@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { Plus, Search } from 'lucide-react'
 import { api } from '@/lib/api'
@@ -13,13 +13,21 @@ const PAGE_SIZE = 20
 
 export default function InventoryPage() {
   const [rows, setRows] = useState<InventoryRow[]>([])
+  const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [q, setQ] = useState('')
   const [page, setPage] = useState(1)
 
-  useEffect(() => {
-    api.listInventory().then(d => setRows(d ?? [])).finally(() => setLoading(false))
+  const fetchInventory = useCallback(() => {
+    setLoading(true)
+    api.listInventory().then(d => {
+      const all = d ?? []
+      setRows(all)
+      setTotal(all.length)
+    }).finally(() => setLoading(false))
   }, [])
+
+  useEffect(() => { fetchInventory() }, [fetchInventory])
 
   useEffect(() => { setPage(1) }, [q])
 
@@ -46,7 +54,7 @@ export default function InventoryPage() {
         <div>
           <h1 className="text-[30px] font-bold tracking-tight text-[#111]">Inventory</h1>
           <p className="text-[13px] text-[#999] mt-0.5">
-            {loading ? 'Loading…' : `${rows.length} batches`}
+            {loading ? 'Loading…' : `${filtered.length} batches`}
           </p>
         </div>
         <Link

@@ -45,7 +45,14 @@ export const api = {
     ),
 
   // Products
-  searchProducts: (q: string) => request<any[]>(`/products?q=${encodeURIComponent(q)}`),
+  searchProducts: (q: string) =>
+    request<{ products: any[]; total: number; page: number; limit: number }>(
+      `/products?q=${encodeURIComponent(q)}`
+    ).then(r => r.products ?? []),
+  searchProductsPaginated: (q: string, page = 1, limit = 30) =>
+    request<{ products: any[]; total: number; page: number; limit: number }>(
+      `/products?q=${encodeURIComponent(q)}&page=${page}&limit=${limit}`
+    ),
   createProduct: (data: { name: string; company_name: string; sku?: string; hsn_code?: string }) =>
     request('/products', { method: 'POST', body: JSON.stringify(data) }),
 

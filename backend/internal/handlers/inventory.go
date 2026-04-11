@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
@@ -20,15 +21,41 @@ func NewInventoryHandler(pool *pgxpool.Pool) *InventoryHandler {
 
 func (h *InventoryHandler) ListProducts(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query().Get("q")
+	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+	if page < 1 {
+		page = 1
+	}
+	limitVal, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	if limitVal < 1 || limitVal > 200 {
+		limitVal = 30
+	}
+	limit := int32(limitVal)
+	offset := int32((page - 1) * int(limit))
+
 	conn := middleware.ConnFromCtx(r.Context())
 	queries := generated.New(conn)
 
-	products, err := queries.SearchProducts(r.Context(), q)
+	total, err := queries.CountProducts(r.Context(), q)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "could not count products")
+		return
+	}
+
+	products, err := queries.SearchProducts(r.Context(), generated.SearchProductsParams{
+		Column1: q,
+		Limit:   limit,
+		Offset:  offset,
+	})
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "could not fetch products")
 		return
 	}
-	writeJSON(w, http.StatusOK, products)
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"products": products,
+		"total":    total,
+		"page":     page,
+		"limit":    limit,
+	})
 }
 
 func (h *InventoryHandler) CreateProduct(w http.ResponseWriter, r *http.Request) {

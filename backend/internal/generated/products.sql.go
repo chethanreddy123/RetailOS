@@ -11,6 +11,20 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countProducts = `-- name: CountProducts :one
+SELECT COUNT(*) FROM products
+WHERE $1::text = ''
+   OR name ILIKE '%' || $1 || '%'
+   OR company_name ILIKE '%' || $1 || '%'
+`
+
+func (q *Queries) CountProducts(ctx context.Context, dollar_1 string) (int64, error) {
+	row := q.db.QueryRow(ctx, countProducts, dollar_1)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createProduct = `-- name: CreateProduct :one
 INSERT INTO products (name, company_name, sku, hsn_code)
 VALUES ($1, $2, $3, $4)
@@ -67,11 +81,17 @@ WHERE $1::text = ''
    OR name ILIKE '%' || $1 || '%'
    OR company_name ILIKE '%' || $1 || '%'
 ORDER BY name
-LIMIT 30
+LIMIT $2 OFFSET $3
 `
 
-func (q *Queries) SearchProducts(ctx context.Context, dollar_1 string) ([]Product, error) {
-	rows, err := q.db.Query(ctx, searchProducts, dollar_1)
+type SearchProductsParams struct {
+	Column1 string `json:"column_1"`
+	Limit   int32  `json:"limit"`
+	Offset  int32  `json:"offset"`
+}
+
+func (q *Queries) SearchProducts(ctx context.Context, arg SearchProductsParams) ([]Product, error) {
+	rows, err := q.db.Query(ctx, searchProducts, arg.Column1, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
