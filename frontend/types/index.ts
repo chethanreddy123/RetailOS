@@ -128,6 +128,16 @@ export interface CartState {
   }
 }
 
+// ─── Dashboard ──────────────────────────────────────────────────────────
+
+export interface DashboardData {
+  total_sales: number
+  order_count: number
+  low_stock: number
+  expiring_soon: number
+  payment_split: { payment_mode: string; total: number }[]
+}
+
 // ─── Stock Adjustments ──────────────────────────────────────────────────
 
 export interface StockAdjustment {

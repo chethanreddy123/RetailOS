@@ -90,6 +90,9 @@ export const api = {
   updateCustomer: (id: string, data: { name: string; phone: string; age?: number | null }) =>
     request(`/customers/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
 
+  // Dashboard
+  getDashboard: () => request<any>('/dashboard'),
+
   // Orders
   createOrder: (data: object) =>
     request<any>('/orders', { method: 'POST', body: JSON.stringify(data) }),

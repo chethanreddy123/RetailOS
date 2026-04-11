@@ -55,6 +55,7 @@ func main() {
 	customerHandler := handlers.NewCustomerHandler(pool)
 	orderHandler := handlers.NewOrderHandler(pool)
 	stockAdjHandler := handlers.NewStockAdjustmentHandler(pool)
+	dashboardHandler := handlers.NewDashboardHandler(pool)
 	reportHandler := handlers.NewReportHandler(pool)
 
 	// Router
@@ -99,6 +100,9 @@ func main() {
 	r.Group(func(r chi.Router) {
 		r.Use(middleware.JWTAuth(cfg.JWTSecret))
 		r.Use(middleware.TenantContext(pool))
+
+		// Dashboard
+		r.Get("/dashboard", dashboardHandler.GetDashboard)
 
 		// Inventory
 		r.Get("/products", inventoryHandler.ListProducts)
