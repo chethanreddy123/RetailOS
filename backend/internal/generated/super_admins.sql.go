@@ -11,22 +11,13 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const getSuperAdminByUsername = `-- name: GetSuperAdminByUsername :one
-SELECT id, username, email, hashed_password, is_active, created_at FROM super_admins WHERE username = $1 AND is_active = TRUE
+const cleanExpiredOTPs = `-- name: CleanExpiredOTPs :exec
+DELETE FROM super_admin_otp WHERE expires_at < NOW()
 `
 
-func (q *Queries) GetSuperAdminByUsername(ctx context.Context, username string) (SuperAdmin, error) {
-	row := q.db.QueryRow(ctx, getSuperAdminByUsername, username)
-	var i SuperAdmin
-	err := row.Scan(
-		&i.ID,
-		&i.Username,
-		&i.Email,
-		&i.HashedPassword,
-		&i.IsActive,
-		&i.CreatedAt,
-	)
-	return i, err
+func (q *Queries) CleanExpiredOTPs(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, cleanExpiredOTPs)
+	return err
 }
 
 const createSuperAdminOTP = `-- name: CreateSuperAdminOTP :one
@@ -64,6 +55,11 @@ WHERE o.id = $1
   AND o.expires_at > NOW()
 `
 
+type GetOTPByIDParams struct {
+	ID      pgtype.UUID `json:"id"`
+	OtpCode string      `json:"otp_code"`
+}
+
 type GetOTPByIDRow struct {
 	ID        pgtype.UUID        `json:"id"`
 	AdminID   pgtype.UUID        `json:"admin_id"`
@@ -75,8 +71,8 @@ type GetOTPByIDRow struct {
 	Email     string             `json:"email"`
 }
 
-func (q *Queries) GetOTPByID(ctx context.Context, id pgtype.UUID, otpCode string) (GetOTPByIDRow, error) {
-	row := q.db.QueryRow(ctx, getOTPByID, id, otpCode)
+func (q *Queries) GetOTPByID(ctx context.Context, arg GetOTPByIDParams) (GetOTPByIDRow, error) {
+	row := q.db.QueryRow(ctx, getOTPByID, arg.ID, arg.OtpCode)
 	var i GetOTPByIDRow
 	err := row.Scan(
 		&i.ID,
@@ -91,20 +87,29 @@ func (q *Queries) GetOTPByID(ctx context.Context, id pgtype.UUID, otpCode string
 	return i, err
 }
 
+const getSuperAdminByUsername = `-- name: GetSuperAdminByUsername :one
+SELECT id, username, email, hashed_password, is_active, created_at FROM super_admins WHERE username = $1 AND is_active = TRUE
+`
+
+func (q *Queries) GetSuperAdminByUsername(ctx context.Context, username string) (SuperAdmin, error) {
+	row := q.db.QueryRow(ctx, getSuperAdminByUsername, username)
+	var i SuperAdmin
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.HashedPassword,
+		&i.IsActive,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const markOTPUsed = `-- name: MarkOTPUsed :exec
 UPDATE super_admin_otp SET used = TRUE WHERE id = $1
 `
 
 func (q *Queries) MarkOTPUsed(ctx context.Context, id pgtype.UUID) error {
 	_, err := q.db.Exec(ctx, markOTPUsed, id)
-	return err
-}
-
-const cleanExpiredOTPs = `-- name: CleanExpiredOTPs :exec
-DELETE FROM super_admin_otp WHERE expires_at < NOW()
-`
-
-func (q *Queries) CleanExpiredOTPs(ctx context.Context) error {
-	_, err := q.db.Exec(ctx, cleanExpiredOTPs)
 	return err
 }

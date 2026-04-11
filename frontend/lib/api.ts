@@ -18,7 +18,7 @@ async function request<T>(
 
   const res = await fetch(`${BASE_URL}${path}`, { ...options, headers })
 
-  if (res.status === 401) {
+  if (res.status === 401 && path !== '/auth/login') {
     localStorage.removeItem('token')
     localStorage.removeItem('shop_name')
     localStorage.removeItem('schema_name')
@@ -45,9 +45,18 @@ export const api = {
     ),
 
   // Products
-  searchProducts: (q: string) => request<any[]>(`/products?q=${encodeURIComponent(q)}`),
+  searchProducts: (q: string) =>
+    request<{ products: any[]; total: number; page: number; limit: number }>(
+      `/products?q=${encodeURIComponent(q)}`
+    ).then(r => r.products ?? []),
+  searchProductsPaginated: (q: string, page = 1, limit = 30) =>
+    request<{ products: any[]; total: number; page: number; limit: number }>(
+      `/products?q=${encodeURIComponent(q)}&page=${page}&limit=${limit}`
+    ),
   createProduct: (data: { name: string; company_name: string; sku?: string; hsn_code?: string }) =>
     request('/products', { method: 'POST', body: JSON.stringify(data) }),
+  updateProduct: (id: string, data: { name: string; company_name: string; sku?: string | null; hsn_code?: string | null }) =>
+    request(`/products/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
 
   // Batches
   listBatches: (product_id: string) => request<any[]>(`/batches?product_id=${product_id}`),

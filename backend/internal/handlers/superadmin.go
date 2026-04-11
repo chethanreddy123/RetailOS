@@ -119,7 +119,10 @@ func (h *SuperAdminHandler) VerifyOTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	q := generated.New(h.pool)
-	otpRow, err := q.GetOTPByID(r.Context(), sessionID, req.OTP)
+	otpRow, err := q.GetOTPByID(r.Context(), generated.GetOTPByIDParams{
+		ID:      sessionID,
+		OtpCode: req.OTP,
+	})
 	if err != nil {
 		writeError(w, http.StatusUnauthorized, "invalid or expired OTP")
 		return

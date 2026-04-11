@@ -3,8 +3,10 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -20,15 +22,41 @@ func NewInventoryHandler(pool *pgxpool.Pool) *InventoryHandler {
 
 func (h *InventoryHandler) ListProducts(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query().Get("q")
+	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+	if page < 1 {
+		page = 1
+	}
+	limitVal, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	if limitVal < 1 || limitVal > 200 {
+		limitVal = 20
+	}
+	limit := int32(limitVal)
+	offset := int32((page - 1) * int(limit))
+
 	conn := middleware.ConnFromCtx(r.Context())
 	queries := generated.New(conn)
 
-	products, err := queries.SearchProducts(r.Context(), q)
+	total, err := queries.CountProducts(r.Context(), q)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "could not count products")
+		return
+	}
+
+	products, err := queries.SearchProducts(r.Context(), generated.SearchProductsParams{
+		Column1: q,
+		Limit:   limit,
+		Offset:  offset,
+	})
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "could not fetch products")
 		return
 	}
-	writeJSON(w, http.StatusOK, products)
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"products": products,
+		"total":    total,
+		"page":     page,
+		"limit":    limit,
+	})
 }
 
 func (h *InventoryHandler) CreateProduct(w http.ResponseWriter, r *http.Request) {
@@ -113,14 +141,14 @@ func (h *InventoryHandler) ListActiveBatches(w http.ResponseWriter, r *http.Requ
 
 func (h *InventoryHandler) CreateBatch(w http.ResponseWriter, r *http.Request) {
 	var body struct {
-		ProductID    string   `json:"product_id"`
-		BatchNo      string   `json:"batch_no"`
-		ExpiryDate   string   `json:"expiry_date"` // YYYY-MM-DD
-		MRP          float64  `json:"mrp"`
-		BuyingPrice  float64  `json:"buying_price"`
-		SellingPrice float64  `json:"selling_price"`
-		PurchaseQty  int32    `json:"purchase_qty"`
-		BoxNo        *string  `json:"box_no"`
+		ProductID    string  `json:"product_id"`
+		BatchNo      string  `json:"batch_no"`
+		ExpiryDate   string  `json:"expiry_date"` // YYYY-MM-DD
+		MRP          float64 `json:"mrp"`
+		BuyingPrice  float64 `json:"buying_price"`
+		SellingPrice float64 `json:"selling_price"`
+		PurchaseQty  int32   `json:"purchase_qty"`
+		BoxNo        *string `json:"box_no"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
@@ -204,3 +232,42 @@ func (h *InventoryHandler) ListInventory(w http.ResponseWriter, r *http.Request)
 	writeJSON(w, http.StatusOK, rows)
 }
 
+func (h *InventoryHandler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	var pid pgtype.UUID
+	if err := pid.Scan(idStr); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid product id")
+		return
+	}
+
+	var body struct {
+		Name        string  `json:"name"`
+		CompanyName string  `json:"company_name"`
+		SKU         *string `json:"sku"`
+		HSNCode     *string `json:"hsn_code"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if body.Name == "" || body.CompanyName == "" {
+		writeError(w, http.StatusBadRequest, "name and company_name are required")
+		return
+	}
+
+	conn := middleware.ConnFromCtx(r.Context())
+	queries := generated.New(conn)
+
+	product, err := queries.UpdateProduct(r.Context(), generated.UpdateProductParams{
+		ProductID:   pid,
+		Name:        body.Name,
+		CompanyName: body.CompanyName,
+		Sku:         body.SKU,
+		HsnCode:     body.HSNCode,
+	})
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "could not update product: "+err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, product)
+}
