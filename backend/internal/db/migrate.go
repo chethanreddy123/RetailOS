@@ -59,6 +59,7 @@ func RunTenantMigrations(ctx context.Context, pool *pgxpool.Pool, schemaName str
 		"internal/migrations/tenant/000003_create_customers.up.sql",
 		"internal/migrations/tenant/000004_create_orders.up.sql",
 		"internal/migrations/tenant/000005_create_order_items.up.sql",
+		"internal/migrations/tenant/000006_add_payment_mode_to_orders.up.sql",
 	}
 
 	for _, f := range migrationFiles {
@@ -75,5 +76,63 @@ func RunTenantMigrations(ctx context.Context, pool *pgxpool.Pool, schemaName str
 	conn.Exec(ctx, "SET search_path TO public")
 
 	log.Printf("Tenant schema %s provisioned successfully", schemaName)
+	return nil
+}
+
+// MigrateAllTenants runs tenant migrations on every existing tenant schema.
+// Uses IF NOT EXISTS / IF NOT COLUMN so migrations are idempotent and safe to re-run.
+func MigrateAllTenants(ctx context.Context, pool *pgxpool.Pool) error {
+	rows, err := pool.Query(ctx, "SELECT schema_name FROM tenants")
+	if err != nil {
+		return fmt.Errorf("list tenants: %w", err)
+	}
+	defer rows.Close()
+
+	var schemas []string
+	for rows.Next() {
+		var s string
+		if err := rows.Scan(&s); err != nil {
+			return fmt.Errorf("scan tenant schema: %w", err)
+		}
+		schemas = append(schemas, s)
+	}
+
+	migrationFiles := []string{
+		"internal/migrations/tenant/000001_create_products.up.sql",
+		"internal/migrations/tenant/000002_create_batches.up.sql",
+		"internal/migrations/tenant/000003_create_customers.up.sql",
+		"internal/migrations/tenant/000004_create_orders.up.sql",
+		"internal/migrations/tenant/000005_create_order_items.up.sql",
+		"internal/migrations/tenant/000006_add_payment_mode_to_orders.up.sql",
+	}
+
+	for _, schema := range schemas {
+		conn, err := pool.Acquire(ctx)
+		if err != nil {
+			return fmt.Errorf("acquire connection for %s: %w", schema, err)
+		}
+
+		if _, err := conn.Exec(ctx, fmt.Sprintf("SET search_path TO %s, public", schema)); err != nil {
+			conn.Release()
+			return fmt.Errorf("set search_path for %s: %w", schema, err)
+		}
+
+		for _, f := range migrationFiles {
+			sql, err := os.ReadFile(f)
+			if err != nil {
+				conn.Release()
+				return fmt.Errorf("read migration %s: %w", f, err)
+			}
+			if _, err := conn.Exec(ctx, string(sql)); err != nil {
+				// Ignore "already exists" errors — migrations are idempotent
+				log.Printf("Migration %s on %s: %v (may be already applied)", f, schema, err)
+			}
+		}
+
+		conn.Exec(ctx, "SET search_path TO public")
+		conn.Release()
+		log.Printf("Tenant %s migrations applied", schema)
+	}
+
 	return nil
 }

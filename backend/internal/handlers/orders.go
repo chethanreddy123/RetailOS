@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -46,6 +47,7 @@ type createOrderRequest struct {
 	SGSTTotal   float64            `json:"sgst_total"`
 	IGSTTotal   float64            `json:"igst_total"`
 	TotalAmount float64            `json:"total_amount"`
+	PaymentMode string             `json:"payment_mode"`
 }
 
 func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
@@ -56,6 +58,17 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 	if len(req.Items) == 0 {
 		writeError(w, http.StatusBadRequest, "order must have at least one item")
+		return
+	}
+
+	// Default and validate payment mode
+	if req.PaymentMode == "" {
+		req.PaymentMode = "cash"
+	}
+	switch req.PaymentMode {
+	case "cash", "upi", "card", "mixed":
+	default:
+		writeError(w, http.StatusBadRequest, "payment_mode must be cash, upi, card, or mixed")
 		return
 	}
 
@@ -151,8 +164,10 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		SgstTotal:   numericFromFloat(sgstTotal),
 		IgstTotal:   numericFromFloat(igstTotal),
 		TotalAmount: numericFromFloat(totalAmount),
+		PaymentMode: req.PaymentMode,
 	})
 	if err != nil {
+		log.Printf("CreateOrder error: %v", err)
 		writeError(w, http.StatusInternalServerError, "could not create order")
 		return
 	}

@@ -1,6 +1,6 @@
 -- name: CreateOrder :one
-INSERT INTO orders (order_number, customer_id, cgst_total, sgst_total, igst_total, total_amount)
-VALUES ($1, $2, $3, $4, $5, $6)
+INSERT INTO orders (order_number, customer_id, cgst_total, sgst_total, igst_total, total_amount, payment_mode)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
 RETURNING *;
 
 -- name: CreateOrderItem :one
@@ -9,7 +9,7 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 RETURNING *;
 
 -- name: ListOrders :many
-SELECT o.order_id, o.order_number, o.total_amount, o.status, o.created_at,
+SELECT o.order_id, o.order_number, o.total_amount, o.status, o.payment_mode, o.created_at,
        c.name  AS customer_name,
        c.phone AS customer_phone
 FROM orders o

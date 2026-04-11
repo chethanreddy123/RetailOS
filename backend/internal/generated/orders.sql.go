@@ -55,9 +55,9 @@ func (q *Queries) CountOrdersInFY(ctx context.Context, createdAt pgtype.Timestam
 }
 
 const createOrder = `-- name: CreateOrder :one
-INSERT INTO orders (order_number, customer_id, cgst_total, sgst_total, igst_total, total_amount)
-VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING order_id, order_number, customer_id, cgst_total, sgst_total, igst_total, total_amount, status, created_at
+INSERT INTO orders (order_number, customer_id, cgst_total, sgst_total, igst_total, total_amount, payment_mode)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+RETURNING order_id, order_number, customer_id, cgst_total, sgst_total, igst_total, total_amount, status, created_at, payment_mode
 `
 
 type CreateOrderParams struct {
@@ -67,6 +67,7 @@ type CreateOrderParams struct {
 	SgstTotal   pgtype.Numeric `json:"sgst_total"`
 	IgstTotal   pgtype.Numeric `json:"igst_total"`
 	TotalAmount pgtype.Numeric `json:"total_amount"`
+	PaymentMode string         `json:"payment_mode"`
 }
 
 func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order, error) {
@@ -77,6 +78,7 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 		arg.SgstTotal,
 		arg.IgstTotal,
 		arg.TotalAmount,
+		arg.PaymentMode,
 	)
 	var i Order
 	err := row.Scan(
@@ -89,6 +91,7 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 		&i.TotalAmount,
 		&i.Status,
 		&i.CreatedAt,
+		&i.PaymentMode,
 	)
 	return i, err
 }
@@ -146,7 +149,7 @@ func (q *Queries) CreateOrderItem(ctx context.Context, arg CreateOrderItemParams
 }
 
 const getOrderByID = `-- name: GetOrderByID :one
-SELECT o.order_id, o.order_number, o.customer_id, o.cgst_total, o.sgst_total, o.igst_total, o.total_amount, o.status, o.created_at,
+SELECT o.order_id, o.order_number, o.customer_id, o.cgst_total, o.sgst_total, o.igst_total, o.total_amount, o.status, o.created_at, o.payment_mode,
        c.name  AS customer_name,
        c.phone AS customer_phone
 FROM orders o
@@ -164,6 +167,7 @@ type GetOrderByIDRow struct {
 	TotalAmount   pgtype.Numeric     `json:"total_amount"`
 	Status        string             `json:"status"`
 	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+	PaymentMode   string             `json:"payment_mode"`
 	CustomerName  *string            `json:"customer_name"`
 	CustomerPhone *string            `json:"customer_phone"`
 }
@@ -181,6 +185,7 @@ func (q *Queries) GetOrderByID(ctx context.Context, orderID pgtype.UUID) (GetOrd
 		&i.TotalAmount,
 		&i.Status,
 		&i.CreatedAt,
+		&i.PaymentMode,
 		&i.CustomerName,
 		&i.CustomerPhone,
 	)
@@ -225,7 +230,7 @@ func (q *Queries) GetOrderItems(ctx context.Context, orderID pgtype.UUID) ([]Ord
 }
 
 const listOrders = `-- name: ListOrders :many
-SELECT o.order_id, o.order_number, o.total_amount, o.status, o.created_at,
+SELECT o.order_id, o.order_number, o.total_amount, o.status, o.payment_mode, o.created_at,
        c.name  AS customer_name,
        c.phone AS customer_phone
 FROM orders o
@@ -252,6 +257,7 @@ type ListOrdersRow struct {
 	OrderNumber   string             `json:"order_number"`
 	TotalAmount   pgtype.Numeric     `json:"total_amount"`
 	Status        string             `json:"status"`
+	PaymentMode   string             `json:"payment_mode"`
 	CreatedAt     pgtype.Timestamptz `json:"created_at"`
 	CustomerName  *string            `json:"customer_name"`
 	CustomerPhone *string            `json:"customer_phone"`
@@ -271,6 +277,7 @@ func (q *Queries) ListOrders(ctx context.Context, arg ListOrdersParams) ([]ListO
 			&i.OrderNumber,
 			&i.TotalAmount,
 			&i.Status,
+			&i.PaymentMode,
 			&i.CreatedAt,
 			&i.CustomerName,
 			&i.CustomerPhone,

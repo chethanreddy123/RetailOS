@@ -32,6 +32,11 @@ func main() {
 	}
 	defer pool.Close()
 
+	// Run tenant migrations on all existing tenants
+	if err := db.MigrateAllTenants(ctx, pool); err != nil {
+		log.Printf("WARNING: tenant migrations had errors: %v", err)
+	}
+
 	// Handlers
 	authHandler := handlers.NewAuthHandler(pool, cfg.JWTSecret)
 	adminHandler := handlers.NewAdminHandler(pool, cfg.DatabaseURL)

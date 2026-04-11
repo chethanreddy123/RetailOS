@@ -55,8 +55,9 @@ export default function OrderDetailPage() {
         <p className="text-[13px] text-[#999] mt-0.5 flex items-center gap-3">
           <span>{fmtDate(order.created_at)}</span>
           <span className={`text-[12px] font-medium ${order.status === 'active' ? 'text-emerald-600' : 'text-[#CCCCCC]'}`}>
-            ● {order.status}
+            {'\u25CF'} {order.status}
           </span>
+          <span className="text-[12px] text-[#888] capitalize">{order.payment_mode ?? 'cash'}</span>
         </p>
       </div>
 

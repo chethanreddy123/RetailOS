@@ -80,6 +80,8 @@ export interface OrderItem {
   line_total: number
 }
 
+export type PaymentMode = 'cash' | 'upi' | 'card' | 'mixed'
+
 export interface Order {
   order_id: string
   order_number: string
@@ -90,6 +92,7 @@ export interface Order {
   sgst_total: number
   igst_total: number
   total_amount: number
+  payment_mode: PaymentMode
   status: string
   created_at: string
 }
@@ -117,6 +120,7 @@ export interface CartItem {
 export interface CartState {
   items: CartItem[]
   isInState: boolean
+  paymentMode: PaymentMode
   customer: {
     phone: string
     name: string
