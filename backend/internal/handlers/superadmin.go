@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
+	"log"
 	"math/big"
 	"net/http"
 	"time"
@@ -79,6 +80,7 @@ func (h *SuperAdminHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := email.SendOTP(h.smtp, admin.Email, otp); err != nil {
+		log.Printf("SMTP error sending OTP to %s: %v", admin.Email, err)
 		writeError(w, http.StatusInternalServerError, "could not send OTP email")
 		return
 	}
