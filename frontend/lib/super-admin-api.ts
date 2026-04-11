@@ -7,7 +7,8 @@ function getSAToken(): string | null {
 
 async function saRequest<T>(
   path: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  skipAuthRedirect = false
 ): Promise<T> {
   const token = getSAToken()
   const headers: Record<string, string> = {
@@ -18,7 +19,7 @@ async function saRequest<T>(
 
   const res = await fetch(`${BASE_URL}${path}`, { ...options, headers })
 
-  if (res.status === 401 || res.status === 403) {
+  if ((res.status === 401 || res.status === 403) && !skipAuthRedirect) {
     localStorage.removeItem('sa_token')
     window.location.href = '/super-admin/login'
     throw new Error('Unauthorized')
@@ -38,13 +39,15 @@ export const superAdminApi = {
   login: (username: string, password: string) =>
     saRequest<{ message: string; session_id: string }>(
       '/super-admin/auth/login',
-      { method: 'POST', body: JSON.stringify({ username, password }) }
+      { method: 'POST', body: JSON.stringify({ username, password }) },
+      true
     ),
 
   verifyOTP: (session_id: string, otp: string) =>
     saRequest<{ token: string }>(
       '/super-admin/auth/verify-otp',
-      { method: 'POST', body: JSON.stringify({ session_id, otp }) }
+      { method: 'POST', body: JSON.stringify({ session_id, otp }) },
+      true
     ),
 
   listTenants: () =>
