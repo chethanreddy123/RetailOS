@@ -67,8 +67,11 @@ func main() {
 		w.Write([]byte("ok"))
 	})
 
+	// Rate limiter for login endpoints: 5 attempts per 10 seconds, burst of 5
+	loginLimiter := middleware.NewRateLimiter(0.5, 5)
+
 	// Auth
-	r.Post("/auth/login", authHandler.Login)
+	r.With(loginLimiter.Limit).Post("/auth/login", authHandler.Login)
 
 	// Super admin routes — only available in dev/development environment
 	if cfg.Environment == "dev" || cfg.Environment == "development" {

@@ -6,22 +6,137 @@ A minimalist point-of-sale system built for Indian medical shops. Multi-tenant, 
 
 ## Stack
 
-| | |
+| Layer | Technology |
 |---|---|
-| **Frontend** | Next.js 16, Redux Toolkit, Tailwind CSS |
-| **Backend** | Go, chi, sqlc, pgx |
-| **Database** | PostgreSQL (NeonDB) |
+| **Frontend** | Next.js 16, Redux Toolkit, Tailwind CSS, shadcn/ui |
+| **Backend** | Go 1.22, chi router, sqlc, pgx v5 |
+| **Database** | PostgreSQL (NeonDB Serverless) |
+| **Auth** | Custom JWT (golang-jwt) — no third-party auth |
+| **Hosting** | Vercel (frontend) + Render (backend) |
+
+---
+
+## Architecture
+
+### System Overview
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                          Client Browser                          │
+└────────────────────────────┬────────────────────────────────────┘
+                             │ HTTPS
+                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    Vercel (Next.js 16)                           │
+│                                                                  │
+│  /(auth)          /(dashboard)              /super-admin         │
+│  └── /login       ├── /billing             ├── /login           │
+│                   ├── /inventory           └── /dashboard        │
+│                   ├── /orders                                    │
+│                   ├── /reports             Redux Store           │
+│                   └── /admin              (authSlice, cartSlice) │
+└────────────────────────────┬────────────────────────────────────┘
+                             │ REST + Bearer JWT
+                             │ NEXT_PUBLIC_API_URL
+                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                   Render (Go / chi router)                       │
+│                                                                  │
+│  Public routes              Tenant routes (JWT + search_path)    │
+│  POST /auth/login           GET/POST /products                   │
+│  POST /super-admin/login    GET/POST /batches                    │
+│  POST /super-admin/verify   GET      /inventory                  │
+│                             GET      /customers                  │
+│  Admin routes (JWT role)    POST/GET /orders                     │
+│  POST /super-admin/tenants  GET      /reports/gst                │
+│  GET  /super-admin/tenants                                       │
+│  PATCH /super-admin/tenants/:id                                  │
+│                                                                  │
+│  Middleware stack:                                               │
+│  Logger → Recoverer → CORS → RateLimit → JWTAuth → TenantCtx    │
+└────────────────────────────┬────────────────────────────────────┘
+                             │ pgx pool (TLS)
+                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                  NeonDB (PostgreSQL Serverless)                  │
+│                                                                  │
+│  public schema                  tenant_<id> schema (per shop)    │
+│  ├── tenants                    ├── products                     │
+│  └── super_admins               ├── batches                      │
+│                                 ├── customers                    │
+│                                 ├── orders                       │
+│                                 └── order_items                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Multi-Tenancy Model
+
+```
+Login (username + password)
+        │
+        ▼
+  Lookup tenant in public.tenants
+        │
+        ▼
+  Issue JWT  { tenant_id, schema_name, order_prefix, ... }
+        │
+        ▼
+  Every API request → middleware reads schema_name from JWT
+        │
+        ▼
+  SET search_path = tenant_<id>   ← all queries run inside this schema
+        │
+        ▼
+  Tenant data is fully isolated — no cross-tenant queries possible
+```
+
+### Auth Flow
+
+```
+Shop Owner                       Super Admin
+─────────────────                ──────────────────────────
+POST /auth/login                 POST /super-admin/auth/login
+  username + password              username + password
+        │                                │
+        ▼                                ▼
+  JWT { role: tenant }           OTP sent to registered email
+        │                                │
+        │                        POST /super-admin/auth/verify-otp
+        │                                │
+        │                                ▼
+        │                          JWT { role: super_admin }
+        │                                │
+        ▼                                ▼
+  Stored in Redux              Stored in localStorage (sa_token)
+  Access: /billing etc.        Access: /super-admin/dashboard
+```
+
+### Order Creation (ACID Transaction)
+
+```
+POST /orders
+    │
+    ├── BEGIN transaction
+    ├── INSERT orders row
+    ├── For each item:
+    │     ├── SELECT batch FOR UPDATE  ← prevents overselling
+    │     ├── Check available_stock >= qty
+    │     ├── INSERT order_items row
+    │     └── UPDATE batch SET available_stock -= qty
+    ├── COMMIT
+    └── Return order with GST breakdown
+```
 
 ---
 
 ## Features
 
-- **Billing** — product search, batch selection, CGST/SGST/IGST auto-computation
-- **Inventory** — batch management, expiry tracking, stock levels
-- **Orders** — paginated history, search, soft-delete, print view
+- **Billing** — product search, batch selection, CGST/SGST/IGST auto-computation, print bill
+- **Inventory** — batch management, expiry tracking, low-stock alerts
+- **Orders** — paginated history, search by bill/name/phone, soft-delete, print view
 - **Reports** — GST slab breakdown by date range, CSV export
-- **Multi-tenant** — isolated schema per shop, JWT auth
-- **Admin** — create and manage shops
+- **Multi-tenant** — isolated PostgreSQL schema per shop, JWT auth
+- **Super Admin** — OTP-secured dashboard to create and manage shops
 
 ---
 
@@ -35,11 +150,11 @@ go run ./cmd/server    # → :8080
 
 # Frontend
 cd frontend
-cp .env.example .env.local
-npm install && npm run dev   # → :3000
+npm install
+npm run dev            # → :3000
 ```
 
-See [DEV.md](DEV.md) for full setup details and credentials.
+See [DEV.md](DEV.md) for full setup, env vars, and credentials.
 
 ---
 
@@ -48,21 +163,33 @@ See [DEV.md](DEV.md) for full setup details and credentials.
 ```
 retail-os/
 ├── backend/
-│   ├── cmd/server/        # entry point
+│   ├── cmd/
+│   │   ├── server/           # main entry point
+│   │   └── seed-admin/       # one-time super admin seed
 │   ├── internal/
-│   │   ├── handlers/      # HTTP handlers
-│   │   ├── middleware/     # auth, tenant isolation
-│   │   ├── migrations/    # SQL migrations
-│   │   ├── queries/       # sqlc SQL files
-│   │   └── generated/     # sqlc generated code
+│   │   ├── config/           # env var loading
+│   │   ├── db/               # pool, migrations runner
+│   │   ├── email/            # SMTP OTP sender
+│   │   ├── handlers/         # HTTP handlers (auth, inventory, orders, reports, admin)
+│   │   ├── middleware/        # JWT auth, tenant context, rate limiter
+│   │   ├── migrations/
+│   │   │   ├── public/       # tenants, super_admins tables
+│   │   │   └── tenant/       # per-shop schema migrations
+│   │   ├── queries/          # sqlc SQL source files
+│   │   └── generated/        # sqlc generated Go code
 │   └── sqlc.yaml
 └── frontend/
-    ├── app/               # Next.js App Router pages
-    ├── components/        # shared + feature components
-    ├── store/             # Redux slices
-    └── lib/               # API client, GST helpers
+    ├── app/
+    │   ├── (auth)/           # login page
+    │   ├── (dashboard)/      # billing, inventory, orders, reports, admin
+    │   └── super-admin/      # super admin login + dashboard
+    ├── components/
+    │   ├── billing/          # AddItemBar, LineItem
+    │   └── shared/           # Sidebar, Pagination, TableSkeleton, AuthGuard
+    ├── store/                # Redux slices (auth, cart)
+    └── lib/                  # API client, GST helpers
 ```
 
 ---
 
-Built by [Chethanreddy](https://github.com/chethanreddy123)
+Built by [AIOverflow](https://github.com/AIOverflow-in)
