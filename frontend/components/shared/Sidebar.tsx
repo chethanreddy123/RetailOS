@@ -8,13 +8,14 @@ import type { RootState } from '@/store'
 import { cn } from '@/lib/utils'
 import {
   Receipt, Package, ClipboardList, BarChart2,
-  LogOut, Plus,
+  Users, LogOut, Plus,
 } from 'lucide-react'
 
 const NAV = [
   { href: '/billing',   label: 'Billing',   Icon: Receipt },
   { href: '/inventory', label: 'Inventory', Icon: Package },
   { href: '/orders',    label: 'Orders',    Icon: ClipboardList },
+  { href: '/customers', label: 'Customers', Icon: Users },
   { href: '/reports',   label: 'Reports',   Icon: BarChart2 },
 ]
 

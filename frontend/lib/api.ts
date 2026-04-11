@@ -75,6 +75,12 @@ export const api = {
 
   // Customers
   lookupCustomer: (phone: string) => request<any>(`/customers?phone=${phone}`),
+  listCustomers: (q = '', page = 1, limit = 20) =>
+    request<{ customers: any[]; total: number; page: number; limit: number }>(
+      `/customers?q=${encodeURIComponent(q)}&page=${page}&limit=${limit}`
+    ),
+  updateCustomer: (id: string, data: { name: string; phone: string; age?: number | null }) =>
+    request(`/customers/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
 
   // Orders
   createOrder: (data: object) =>

@@ -8,13 +8,12 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
-	"github.com/rs/cors"
-
 	"github.com/retail-os/backend/internal/config"
 	"github.com/retail-os/backend/internal/db"
 	"github.com/retail-os/backend/internal/email"
 	"github.com/retail-os/backend/internal/handlers"
 	"github.com/retail-os/backend/internal/middleware"
+	"github.com/rs/cors"
 )
 
 func main() {
@@ -107,6 +106,7 @@ func main() {
 
 		// Customers
 		r.Get("/customers", customerHandler.LookupCustomer)
+		r.Put("/customers/{id}", customerHandler.UpdateCustomer)
 
 		// Orders
 		r.Post("/orders", orderHandler.CreateOrder)
