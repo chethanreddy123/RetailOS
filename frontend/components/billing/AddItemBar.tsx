@@ -13,6 +13,7 @@ interface Product { product_id: string; name: string; company_name: string }
 interface Batch {
   batch_id: string; batch_no: string; expiry_date: string
   mrp: number; selling_price: number; available_stock: number
+  purchase_gst_rate?: number | null
 }
 
 const inp = "h-9 px-3 text-body border border-[#E5E5E5] rounded-lg bg-white focus:outline-none focus:border-[#999] transition-colors"
@@ -50,7 +51,7 @@ export default function AddItemBar({ onAdd, isInState }: { onAdd: () => void; is
   function selectBatch(b: Batch) {
     setSelectedBatch(b)
     setSalePrice(b.selling_price)
-    setGstRate(0)
+    setGstRate((b.purchase_gst_rate as GSTRate) ?? 0)
     setQty(1)
   }
 
