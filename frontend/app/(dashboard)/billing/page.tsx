@@ -5,6 +5,7 @@ import { MessageCircle } from 'lucide-react'
 import { useDispatch, useSelector } from 'react-redux'
 import { toast } from 'sonner'
 import { api } from '@/lib/api'
+import { getCachedSettings, setCachedSettings } from '@/lib/settingsCache'
 import { generateBill, sendBillViaWhatsApp } from '@/lib/generateBill'
 import type { BillData } from '@/lib/generateBill'
 import { clearCart, setIsInState, setPaymentMode } from '@/store/cartSlice'
@@ -65,7 +66,11 @@ export default function BillingPage() {
       setRows([emptyRow()])
       dispatch(clearCart())
 
-      const settings = await api.getSettings()
+      let settings = getCachedSettings()
+      if (!settings) {
+        settings = await api.getSettings()
+        setCachedSettings(settings)
+      }
       const shopName = localStorage.getItem('shop_name') ?? ''
       const billItems = completeRows.map(r => {
         const taxable = r.salePrice * r.qty

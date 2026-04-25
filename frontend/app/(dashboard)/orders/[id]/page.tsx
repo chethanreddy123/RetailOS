@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { api } from '@/lib/api'
+import { getCachedSettings, setCachedSettings } from '@/lib/settingsCache'
 import type { OrderDetail, ShopSettings, OrderItem, GSTRate } from '@/types'
 import { fmtCurrency, fmtDate, GST_RATES } from '@/lib/gst'
 import { buildBillData, generateBill, sendBillViaWhatsApp } from '@/lib/generateBill'
@@ -31,7 +32,9 @@ export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const [data, setData] = useState<OrderDetail | null>(null)
-  const [settings, setSettings] = useState<ShopSettings | null>(null)
+  const [settings, setSettings] = useState<ShopSettings | null>(
+    typeof window !== 'undefined' ? getCachedSettings() : null,
+  )
   const [loading, setLoading] = useState(true)
   const [returning, setReturning] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -54,7 +57,13 @@ export default function OrderDetailPage() {
 
   useEffect(() => {
     load()
-    api.getSettings().then(setSettings)
+    api.getSettings().then(fresh => {
+      const prev = getCachedSettings()
+      if (!prev || JSON.stringify(prev) !== JSON.stringify(fresh)) {
+        setSettings(fresh)
+        setCachedSettings(fresh)
+      }
+    })
   }, [id])
 
   async function handleReturn() {
