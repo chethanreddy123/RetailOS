@@ -230,23 +230,69 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, order)
 }
 
+var (
+	allowedOrderStatuses = map[string]bool{"active": true, "returned": true, "partially_returned": true}
+	allowedPaymentModes  = map[string]bool{"cash": true, "upi": true, "card": true, "mixed": true}
+	allowedOrderSorts    = map[string]bool{"date_asc": true, "date_desc": true, "total_asc": true, "total_desc": true}
+)
+
 func (h *OrderHandler) ListOrders(w http.ResponseWriter, r *http.Request) {
-	search := r.URL.Query().Get("q")
-	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+	q := r.URL.Query()
+	search := q.Get("q")
+	page, _ := strconv.Atoi(q.Get("page"))
 	if page < 1 {
 		page = 1
 	}
-	limitVal, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	limitVal, _ := strconv.Atoi(q.Get("limit"))
 	if limitVal < 1 || limitVal > 200 {
 		limitVal = 50
 	}
 	limit := int32(limitVal)
 	offset := int32((page - 1) * int(limit))
 
+	statuses, err := parseEnumList(q["status"], allowedOrderStatuses)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid status: "+err.Error())
+		return
+	}
+	// Default (no chips selected) shows all non-deleted orders. The SQL itself
+	// hard-excludes 'deleted' so a nil status array is safe.
+
+	payments, err := parseEnumList(q["payment"], allowedPaymentModes)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid payment: "+err.Error())
+		return
+	}
+
+	dateFrom, err := parseOptionalDate(q.Get("date_from"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "date_from must be YYYY-MM-DD")
+		return
+	}
+	dateTo, err := parseOptionalDate(q.Get("date_to"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "date_to must be YYYY-MM-DD")
+		return
+	}
+
+	sortKey := q.Get("sort")
+	if sortKey == "" {
+		sortKey = "date_desc"
+	} else if !allowedOrderSorts[sortKey] {
+		writeError(w, http.StatusBadRequest, "invalid sort key")
+		return
+	}
+
 	conn := middleware.ConnFromCtx(r.Context())
 	queries := generated.New(conn)
 
-	total, err := queries.CountOrdersFiltered(r.Context(), search)
+	total, err := queries.CountOrdersFiltered(r.Context(), generated.CountOrdersFilteredParams{
+		Column1: search,
+		Column2: statuses,
+		Column3: payments,
+		Column4: dateFrom,
+		Column5: dateTo,
+	})
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "could not count orders")
 		return
@@ -254,6 +300,11 @@ func (h *OrderHandler) ListOrders(w http.ResponseWriter, r *http.Request) {
 
 	orders, err := queries.ListOrders(r.Context(), generated.ListOrdersParams{
 		Column1: search,
+		Column2: statuses,
+		Column3: payments,
+		Column4: dateFrom,
+		Column5: dateTo,
+		Column6: sortKey,
 		Limit:   limit,
 		Offset:  offset,
 	})
@@ -267,6 +318,63 @@ func (h *OrderHandler) ListOrders(w http.ResponseWriter, r *http.Request) {
 		"page":   page,
 		"limit":  limit,
 	})
+}
+
+// parseEnumList expands repeated query values (and comma-separated forms) and validates
+// each entry against the allowed set. Returns nil for "no filter" so the SQL `IS NULL` branch fires.
+func parseEnumList(raw []string, allowed map[string]bool) ([]string, error) {
+	out := make([]string, 0, len(raw))
+	seen := make(map[string]bool, len(raw))
+	for _, entry := range raw {
+		for _, v := range splitCSV(entry) {
+			if !allowed[v] {
+				return nil, fmt.Errorf("%q", v)
+			}
+			if seen[v] {
+				continue
+			}
+			seen[v] = true
+			out = append(out, v)
+		}
+	}
+	if len(out) == 0 {
+		return nil, nil
+	}
+	return out, nil
+}
+
+func splitCSV(s string) []string {
+	if s == "" {
+		return nil
+	}
+	out := []string{}
+	start := 0
+	for i := 0; i < len(s); i++ {
+		if s[i] == ',' {
+			if i > start {
+				out = append(out, s[start:i])
+			}
+			start = i + 1
+		}
+	}
+	if start < len(s) {
+		out = append(out, s[start:])
+	}
+	return out
+}
+
+func parseOptionalDate(s string) (pgtype.Date, error) {
+	var d pgtype.Date
+	if s == "" {
+		return d, nil // Valid=false → SQL receives NULL
+	}
+	t, err := time.Parse("2006-01-02", s)
+	if err != nil {
+		return d, err
+	}
+	d.Time = t
+	d.Valid = true
+	return d, nil
 }
 
 func (h *OrderHandler) GetOrder(w http.ResponseWriter, r *http.Request) {
@@ -540,8 +648,8 @@ func (h *OrderHandler) EditOrder(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			if err := txq.UpdateOrderItemReturnedQty(r.Context(), generated.UpdateOrderItemReturnedQtyParams{
-				ItemID:  itemID,
-				Column2: returnDelta,
+				ItemID:      itemID,
+				ReturnedQty: returnDelta,
 			}); err != nil {
 				writeError(w, http.StatusInternalServerError, "could not update returned_qty")
 				return

@@ -14,15 +14,24 @@ SELECT o.order_id, o.order_number, o.total_amount, o.status, o.payment_mode, o.c
        c.phone AS customer_phone
 FROM orders o
 LEFT JOIN customers c ON o.customer_id = c.customer_id
-WHERE o.status = 'active'
+WHERE o.status <> 'deleted'
   AND (
       $1::text = ''
       OR o.order_number ILIKE '%' || $1 || '%'
       OR c.name         ILIKE '%' || $1 || '%'
       OR c.phone        ILIKE '%' || $1 || '%'
   )
-ORDER BY o.created_at DESC
-LIMIT $2 OFFSET $3;
+  AND ($2::text[] IS NULL OR o.status       = ANY($2::text[]))
+  AND ($3::text[] IS NULL OR o.payment_mode = ANY($3::text[]))
+  AND ($4::date   IS NULL OR o.created_at::date >= $4::date)
+  AND ($5::date   IS NULL OR o.created_at::date <= $5::date)
+ORDER BY
+  CASE WHEN $6::text = 'date_asc'   THEN o.created_at   END ASC  NULLS LAST,
+  CASE WHEN $6::text = 'date_desc'  THEN o.created_at   END DESC NULLS LAST,
+  CASE WHEN $6::text = 'total_asc'  THEN o.total_amount END ASC  NULLS LAST,
+  CASE WHEN $6::text = 'total_desc' THEN o.total_amount END DESC NULLS LAST,
+  o.created_at DESC
+LIMIT $7 OFFSET $8;
 
 -- name: CountOrders :one
 SELECT COUNT(*) FROM orders WHERE status != 'deleted';
@@ -31,13 +40,17 @@ SELECT COUNT(*) FROM orders WHERE status != 'deleted';
 SELECT COUNT(*)
 FROM orders o
 LEFT JOIN customers c ON o.customer_id = c.customer_id
-WHERE o.status = 'active'
+WHERE o.status <> 'deleted'
   AND (
       $1::text = ''
       OR o.order_number ILIKE '%' || $1 || '%'
       OR c.name         ILIKE '%' || $1 || '%'
       OR c.phone        ILIKE '%' || $1 || '%'
-  );
+  )
+  AND ($2::text[] IS NULL OR o.status       = ANY($2::text[]))
+  AND ($3::text[] IS NULL OR o.payment_mode = ANY($3::text[]))
+  AND ($4::date   IS NULL OR o.created_at::date >= $4::date)
+  AND ($5::date   IS NULL OR o.created_at::date <= $5::date);
 
 -- name: GetOrderByID :one
 SELECT o.order_id, o.order_number, o.customer_id, o.cgst_total, o.sgst_total, o.igst_total,

@@ -89,6 +89,7 @@ export interface InventoryRow {
   distributor_id: string | null
   distributor_name: string | null
   purchase_invoice_no: string | null
+  created_at: string
 }
 
 // ─── Customers ───────────────────────────────────────────────────────────────

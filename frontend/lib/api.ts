@@ -123,10 +123,31 @@ export const api = {
   // Orders
   createOrder: (data: object) =>
     request<any>('/orders', { method: 'POST', body: JSON.stringify(data) }),
-  listOrders: (q = '', page = 1, limit = 20) =>
-    request<{ orders: any[]; total: number; page: number; limit: number }>(
-      `/orders?q=${encodeURIComponent(q)}&page=${page}&limit=${limit}`
-    ),
+  listOrders: (
+    q = '',
+    page = 1,
+    limit = 20,
+    filters: {
+      payment?: string[]
+      status?: string[]
+      dateFrom?: string
+      dateTo?: string
+      sort?: 'date_asc' | 'date_desc' | 'total_asc' | 'total_desc'
+    } = {},
+  ) => {
+    const params = new URLSearchParams()
+    if (q) params.set('q', q)
+    params.set('page', String(page))
+    params.set('limit', String(limit))
+    for (const p of filters.payment ?? []) params.append('payment', p)
+    for (const s of filters.status ?? []) params.append('status', s)
+    if (filters.dateFrom) params.set('date_from', filters.dateFrom)
+    if (filters.dateTo) params.set('date_to', filters.dateTo)
+    if (filters.sort) params.set('sort', filters.sort)
+    return request<{ orders: any[]; total: number; page: number; limit: number }>(
+      `/orders?${params.toString()}`,
+    )
+  },
   getOrder: (id: string) => request<any>(`/orders/${id}`),
   deleteOrder: (id: string) =>
     request(`/orders/${id}`, { method: 'DELETE' }),
