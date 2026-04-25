@@ -152,21 +152,7 @@ export interface OrderDetail {
 
 // ─── Cart (Redux state) ───────────────────────────────────────────────────────
 
-export interface CartItem {
-  batchId: string
-  productId: string
-  productName: string
-  batchNo: string
-  expiryDate: string
-  mrp: number
-  availableStock: number
-  qty: number
-  salePrice: number
-  gstRate: GSTRate
-}
-
 export interface CartState {
-  items: CartItem[]
   isInState: boolean
   paymentMode: PaymentMode
   customer: {
