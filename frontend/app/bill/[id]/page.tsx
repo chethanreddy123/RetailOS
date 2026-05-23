@@ -19,6 +19,7 @@ export default function BillPage() {
   const [settings, setSettings] = useState<ShopSettings | null>(null)
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
   const [ready, setReady] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     Promise.all([api.getOrder(id), api.getSettings()]).then(async ([d, s]) => {
@@ -30,12 +31,23 @@ export default function BillPage() {
         setQrDataUrl(url)
       }
       setReady(true)
+    }).catch((err: unknown) => {
+      const msg = err instanceof Error ? err.message : 'Failed to load bill'
+      setError(msg)
     })
   }, [id])
 
   useEffect(() => {
     if (ready) window.print()
   }, [ready])
+
+  if (error) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', fontSize: 13, color: '#c0392b' }}>
+        {error}
+      </div>
+    )
+  }
 
   if (!ready || !detail || !settings) {
     return (
