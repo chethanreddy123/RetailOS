@@ -26,6 +26,7 @@ export function buildBillData(
   }))
 
   return {
+    orderId: order.order_id,
     orderNumber: order.order_number,
     orderDate: order.created_at,
     customerName: order.customer_name,
@@ -57,11 +58,8 @@ async function buildPdfBlob(data: BillData): Promise<Blob> {
   return pdf(<BillDocument data={{ ...data, googleReviewQr }} />).toBlob()
 }
 
-export async function generateBill(data: BillData): Promise<void> {
-  const blob = await buildPdfBlob(data)
-  const url = URL.createObjectURL(blob)
-  window.open(url, '_blank')
-  setTimeout(() => URL.revokeObjectURL(url), 10_000)
+export function generateBill(data: BillData): void {
+  window.open(`/bill/${data.orderId}`, '_blank')
 }
 
 export async function sendBillViaWhatsApp(data: BillData): Promise<void> {
