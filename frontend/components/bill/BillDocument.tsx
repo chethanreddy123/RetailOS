@@ -16,6 +16,7 @@ export interface BillItem {
 }
 
 export interface BillData {
+  orderId: string
   orderNumber: string
   orderDate: string
   customerName: string | null
@@ -90,18 +91,18 @@ const s = StyleSheet.create({
   policiesText: { fontSize: 7, color: '#555', lineHeight: 1.4 },
 })
 
-function fmt(n: number) {
+export function fmt(n: number) {
   return 'Rs. ' + n.toFixed(2)
 }
 
-function fmtExpiry(dateStr: string): string {
+export function fmtExpiry(dateStr: string): string {
   if (!dateStr) return ''
   const d = new Date(dateStr)
   if (isNaN(d.getTime())) return dateStr
   return `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`
 }
 
-function fmtBillDate(iso: string): string {
+export function fmtBillDate(iso: string): string {
   const d = new Date(iso)
   if (isNaN(d.getTime())) return iso
   return d.toLocaleDateString('en-IN', {
@@ -110,7 +111,7 @@ function fmtBillDate(iso: string): string {
   })
 }
 
-interface GSTSlab {
+export interface GSTSlab {
   rate: number
   taxable: number
   cgst: number
@@ -118,7 +119,7 @@ interface GSTSlab {
   igst: number
 }
 
-function buildGSTSlabs(items: BillItem[], isInState: boolean): GSTSlab[] {
+export function buildGSTSlabs(items: BillItem[], isInState: boolean): GSTSlab[] {
   const map: Record<number, GSTSlab> = {}
   for (const item of items) {
     if (!map[item.gstRate]) {

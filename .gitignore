@@ -17,3 +17,6 @@ backend/retailos
 # OS
 .DS_Store
 *.pdf
+
+# Local Claude Code guide (machine-specific, not for version control)
+CLAUDE.md

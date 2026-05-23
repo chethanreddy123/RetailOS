@@ -90,6 +90,7 @@ export default function BillingPage() {
         }
       })
       const billData: BillData = {
+        orderId: order.order_id,
         orderNumber: order.order_number,
         orderDate: order.created_at,
         customerName: cartCustomer.name || null,
@@ -105,7 +106,7 @@ export default function BillingPage() {
         settings,
         shopName,
       }
-      await generateBill(billData)
+      generateBill(billData)
       if (billData.customerPhone) setLastBill(billData)
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Failed to create order')

@@ -224,12 +224,12 @@ export default function OrderDetailPage() {
               </button>
             </Tooltip>
           )}
-          <Tooltip content="Generate PDF bill">
+          <Tooltip content="Print bill">
             <button
-              onClick={async () => {
+              onClick={() => {
                 if (!data || !settings) return
                 const shopName = localStorage.getItem('shop_name') ?? ''
-                await generateBill(buildBillData(data, settings, shopName))
+                generateBill(buildBillData(data, settings, shopName))
               }}
               className="flex items-center gap-1.5 text-body-sm font-medium border border-[#E0E0E0] rounded-lg px-3 h-8 text-[#555555] hover:bg-[#F5F5F5] hover:border-[#C8C8C8] transition-colors"
             >
