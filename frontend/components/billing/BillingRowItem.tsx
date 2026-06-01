@@ -180,10 +180,14 @@ export default function BillingRowItem({ row, updateRow, removeRow, canRemove }:
                   const outOfStock = p.has_active_stock === false
                   if (outOfStock) {
                     return (
-                      <div
+                      <button
                         key={p.product_id}
-                        className="w-full px-3 py-2 border-b border-[#F5F5F5] last:border-0 opacity-60 cursor-not-allowed select-none"
+                        type="button"
+                        disabled
+                        aria-disabled="true"
+                        aria-label={`${p.name} — out of stock`}
                         title="No active batches — product is out of stock"
+                        className="w-full px-3 py-2 border-b border-[#F5F5F5] last:border-0 opacity-60 cursor-not-allowed select-none text-left"
                       >
                         <div className="flex items-center justify-between gap-2">
                           <div className="min-w-0">
@@ -194,7 +198,7 @@ export default function BillingRowItem({ row, updateRow, removeRow, canRemove }:
                             Out of stock
                           </span>
                         </div>
-                      </div>
+                      </button>
                     )
                   }
                   return (

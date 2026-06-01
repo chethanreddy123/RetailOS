@@ -26,7 +26,7 @@ The billing screen's product search now surfaces stock state at the row level. P
 - Stock aggregate computed in the product search query (`internal/queries/products.sql`)
 - Generated sqlc output regenerated to match
 - `BillingRowItem` renders the out-of-stock disabled state
-- New `isOutOfStock` field added to the product type in `frontend/types/index.ts`
+- New `has_active_stock` field added to the product type in `frontend/types/index.ts`
 
 ---
 
@@ -59,7 +59,7 @@ Every user-facing reference to "RetailOS" replaced with "SellOS" across the land
 - `app/super-admin/login/page.tsx` — super-admin login wordmark
 - `components/shared/Sidebar.tsx` — fallback shop name + footer label
 - `components/billing/BillingRowItem.tsx` — out-of-stock disabled state
-- `types/index.ts` — `isOutOfStock` field
+- `types/index.ts` — `has_active_stock` field
 - `package.json` — version bump 1.4.3 → 1.5.0
 
 **Landing:**
