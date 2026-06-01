@@ -37,7 +37,7 @@ export default function LoginPage() {
 
         {/* Logo */}
         <div className="mb-7 text-center">
-          <h1 className="text-heading-sm font-bold tracking-tight text-foreground">RetailOS</h1>
+          <h1 className="text-heading-sm font-bold tracking-tight text-foreground">SellOS</h1>
           <p className="text-body-sm text-[#AAAAAA] mt-1">Sign in to your shop</p>
         </div>
 
