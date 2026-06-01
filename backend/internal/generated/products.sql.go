@@ -76,11 +76,18 @@ func (q *Queries) GetProduct(ctx context.Context, productID pgtype.UUID) (Produc
 }
 
 const searchProducts = `-- name: SearchProducts :many
-SELECT product_id, name, company_name, sku, hsn_code, created_at FROM products
+SELECT p.product_id, p.name, p.company_name, p.sku, p.hsn_code, p.created_at,
+       EXISTS (
+         SELECT 1 FROM batches b
+         WHERE b.product_id = p.product_id
+           AND b.expiry_date > CURRENT_DATE
+           AND (b.purchase_qty - b.sold_qty) > 0
+       ) AS has_active_stock
+FROM products p
 WHERE $1::text = ''
-   OR name ILIKE '%' || $1 || '%'
-   OR company_name ILIKE '%' || $1 || '%'
-ORDER BY name
+   OR p.name ILIKE '%' || $1 || '%'
+   OR p.company_name ILIKE '%' || $1 || '%'
+ORDER BY p.name
 LIMIT $2 OFFSET $3
 `
 
@@ -90,15 +97,25 @@ type SearchProductsParams struct {
 	Offset  int32  `json:"offset"`
 }
 
-func (q *Queries) SearchProducts(ctx context.Context, arg SearchProductsParams) ([]Product, error) {
+type SearchProductsRow struct {
+	ProductID      pgtype.UUID        `json:"product_id"`
+	Name           string             `json:"name"`
+	CompanyName    string             `json:"company_name"`
+	Sku            *string            `json:"sku"`
+	HsnCode        *string            `json:"hsn_code"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	HasActiveStock bool               `json:"has_active_stock"`
+}
+
+func (q *Queries) SearchProducts(ctx context.Context, arg SearchProductsParams) ([]SearchProductsRow, error) {
 	rows, err := q.db.Query(ctx, searchProducts, arg.Column1, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Product
+	var items []SearchProductsRow
 	for rows.Next() {
-		var i Product
+		var i SearchProductsRow
 		if err := rows.Scan(
 			&i.ProductID,
 			&i.Name,
@@ -106,6 +123,7 @@ func (q *Queries) SearchProducts(ctx context.Context, arg SearchProductsParams) 
 			&i.Sku,
 			&i.HsnCode,
 			&i.CreatedAt,
+			&i.HasActiveStock,
 		); err != nil {
 			return nil, err
 		}

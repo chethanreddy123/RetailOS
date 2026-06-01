@@ -176,17 +176,39 @@ export default function BillingRowItem({ row, updateRow, removeRow, canRemove }:
                 <p className="px-3 py-2 text-body-sm text-label">No matches</p>
               )}
               <div className="max-h-64 overflow-y-auto">
-                {suggestions.map(p => (
-                  <button
-                    key={p.product_id}
-                    type="button"
-                    onMouseDown={e => { e.preventDefault(); selectProduct(p) }}
-                    className="w-full text-left px-3 py-2 hover:bg-[#F7F7F7] transition-colors border-b border-[#F5F5F5] last:border-0"
-                  >
-                    <p className="text-body-sm font-medium text-[#111]">{p.name}</p>
-                    <p className="text-caption text-[#999]">{p.company_name}</p>
-                  </button>
-                ))}
+                {suggestions.map(p => {
+                  const outOfStock = p.has_active_stock === false
+                  if (outOfStock) {
+                    return (
+                      <div
+                        key={p.product_id}
+                        className="w-full px-3 py-2 border-b border-[#F5F5F5] last:border-0 opacity-60 cursor-not-allowed select-none"
+                        title="No active batches — product is out of stock"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="text-body-sm font-medium text-[#111] truncate">{p.name}</p>
+                            <p className="text-caption text-[#999] truncate">{p.company_name}</p>
+                          </div>
+                          <span className="shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded bg-red-50 text-red-600">
+                            Out of stock
+                          </span>
+                        </div>
+                      </div>
+                    )
+                  }
+                  return (
+                    <button
+                      key={p.product_id}
+                      type="button"
+                      onMouseDown={e => { e.preventDefault(); selectProduct(p) }}
+                      className="w-full text-left px-3 py-2 hover:bg-[#F7F7F7] transition-colors border-b border-[#F5F5F5] last:border-0"
+                    >
+                      <p className="text-body-sm font-medium text-[#111]">{p.name}</p>
+                      <p className="text-caption text-[#999]">{p.company_name}</p>
+                    </button>
+                  )
+                })}
               </div>
             </div>
           )}
@@ -208,6 +230,8 @@ export default function BillingRowItem({ row, updateRow, removeRow, canRemove }:
               </option>
             ))}
           </select>
+        ) : row.productId ? (
+          <span className="text-body-sm font-medium text-red-600">Out of stock</span>
         ) : (
           <span className="text-body-sm text-[#AAAAAA]">—</span>
         )}
