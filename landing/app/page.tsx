@@ -15,7 +15,7 @@ import {
 
 // ─── Data ────────────────────────────────────────────────────────────────────
 
-const APP_URL = 'https://retailos.vercel.app'
+const APP_URL = 'https://app.sellos.in'
 
 const features = [
   {
@@ -81,7 +81,7 @@ const stats = [
   { value: '< 30s', label: 'Average bill creation time' },
   { value: '100%', label: 'GST compliant (CGST/SGST/IGST)' },
   { value: '₹0', label: 'Setup or hidden fees' },
-  { value: 'v1.3', label: 'Latest release — April 2026' },
+  { value: 'v1.5', label: 'Latest release — June 2026' },
 ]
 
 const inventoryRows = [
@@ -99,9 +99,9 @@ function Navbar() {
       <div className="mx-auto max-w-6xl px-4 sm:px-6 h-16 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="h-8 w-8 rounded-md bg-white flex items-center justify-center">
-            <span className="text-zinc-950 font-bold text-sm">R</span>
+            <span className="text-zinc-950 font-bold text-sm">S</span>
           </div>
-          <span className="font-semibold text-white text-lg tracking-tight">RetailOS</span>
+          <span className="font-semibold text-white text-lg tracking-tight">SellOS</span>
         </div>
 
         <nav className="hidden md:flex items-center gap-8 text-sm text-zinc-400">
@@ -142,7 +142,7 @@ function Hero() {
         </h1>
 
         <p className="mt-6 text-lg sm:text-xl text-zinc-400 max-w-2xl mx-auto leading-relaxed">
-          RetailOS is a complete billing and inventory system for Indian medical and grocery shops.
+          SellOS is a complete billing and inventory system for Indian medical and grocery shops.
           CGST, SGST, IGST — calculated automatically on every invoice.
         </p>
 
@@ -232,7 +232,7 @@ function GSTCallout() {
             Auto-split CGST, SGST &amp; IGST — every time
           </h2>
           <p className="text-zinc-400 leading-relaxed mb-6">
-            Select whether the sale is in-state or out-of-state and RetailOS handles the rest.
+            Select whether the sale is in-state or out-of-state and SellOS handles the rest.
             In-state orders split tax into 50% CGST + 50% SGST. Out-of-state orders apply full IGST.
             Every line item carries its own slab (0%, 5%, 12%, 18%, 28%) with HSN code.
           </p>
@@ -305,7 +305,7 @@ function HowItWorks() {
         <div className="text-center mb-16">
           <h2 className="text-3xl sm:text-4xl font-bold text-white">Up and running in minutes</h2>
           <p className="mt-4 text-zinc-400 max-w-lg mx-auto">
-            No training required. If you can type a product name, you can use RetailOS.
+            No training required. If you can type a product name, you can use SellOS.
           </p>
         </div>
 
@@ -342,7 +342,7 @@ function InventoryShowcase() {
           </h2>
           <p className="text-zinc-400 leading-relaxed mb-6">
             Every purchase is logged as a batch with expiry date, MRP, buying price, and selling
-            price. RetailOS deducts stock automatically on every sale and highlights items that
+            price. SellOS deducts stock automatically on every sale and highlights items that
             are running low or approaching expiry.
           </p>
           <ul className="space-y-2">
@@ -456,7 +456,7 @@ function CTA() {
       <div className="mx-auto max-w-3xl text-center">
         <h2 className="text-3xl sm:text-4xl font-bold text-white">Ready to modernize your shop?</h2>
         <p className="mt-4 text-zinc-400 max-w-lg mx-auto">
-          Join medical and grocery shops already using RetailOS to bill faster, manage stock
+          Join medical and grocery shops already using SellOS to bill faster, manage stock
           confidently, and file GST without stress.
         </p>
         <div className="mt-10">
@@ -478,9 +478,9 @@ function Footer() {
       <div className="mx-auto max-w-6xl flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <div className="h-7 w-7 rounded-md bg-white flex items-center justify-center">
-            <span className="text-zinc-950 font-bold text-xs">R</span>
+            <span className="text-zinc-950 font-bold text-xs">S</span>
           </div>
-          <span className="font-semibold text-white text-sm">RetailOS</span>
+          <span className="font-semibold text-white text-sm">SellOS</span>
         </div>
         <p className="text-xs text-zinc-500 text-center">
           GST-compliant billing &amp; inventory for Indian medical and grocery shops.

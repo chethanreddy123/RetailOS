@@ -38,9 +38,9 @@ func (c *SMTPConfig) isDev() bool {
 }
 
 func SendOTP(cfg SMTPConfig, to string, otp string) error {
-	subject := "RetailOS Super Admin Login OTP"
+	subject := "SellOS Super Admin Login OTP"
 	body := fmt.Sprintf(
-		"Your one-time password for RetailOS Super Admin login is:\n\n%s\n\nThis code expires in 5 minutes. If you did not request this, ignore this email.",
+		"Your one-time password for SellOS Super Admin login is:\n\n%s\n\nThis code expires in 5 minutes. If you did not request this, ignore this email.",
 		otp,
 	)
 

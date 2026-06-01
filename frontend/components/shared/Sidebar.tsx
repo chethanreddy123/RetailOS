@@ -102,7 +102,7 @@ export default function Sidebar() {
         <div className="px-4 pt-[14px] border-b border-[#EBEBEB]">
           <div className="flex items-center justify-between mb-[10px]">
             <p suppressHydrationWarning className="text-body font-semibold text-[#111] truncate leading-tight">
-              {shopName ?? 'RetailOS'}
+              {shopName ?? 'SellOS'}
             </p>
             <LogOut
               strokeWidth={1.5}
@@ -117,7 +117,7 @@ export default function Sidebar() {
                 {activeNav.label}
               </span>
             )}
-            <span className="text-body-sm text-[#BBBBBB] pb-[9px]">RetailOS</span>
+            <span className="text-body-sm text-[#BBBBBB] pb-[9px]">SellOS</span>
           </div>
         </div>
 

@@ -1,9 +1,16 @@
 -- name: SearchProducts :many
-SELECT * FROM products
+SELECT p.product_id, p.name, p.company_name, p.sku, p.hsn_code, p.created_at,
+       EXISTS (
+         SELECT 1 FROM batches b
+         WHERE b.product_id = p.product_id
+           AND b.expiry_date > CURRENT_DATE
+           AND (b.purchase_qty - b.sold_qty) > 0
+       ) AS has_active_stock
+FROM products p
 WHERE $1::text = ''
-   OR name ILIKE '%' || $1 || '%'
-   OR company_name ILIKE '%' || $1 || '%'
-ORDER BY name
+   OR p.name ILIKE '%' || $1 || '%'
+   OR p.company_name ILIKE '%' || $1 || '%'
+ORDER BY p.name
 LIMIT $2 OFFSET $3;
 
 -- name: CountProducts :one

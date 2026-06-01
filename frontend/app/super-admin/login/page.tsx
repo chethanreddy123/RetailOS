@@ -51,7 +51,7 @@ export default function SuperAdminLoginPage() {
       <div className="w-full max-w-[320px]">
 
         <div className="mb-7 text-center">
-          <h1 className="text-heading-sm font-bold tracking-tight text-foreground">RetailOS</h1>
+          <h1 className="text-heading-sm font-bold tracking-tight text-foreground">SellOS</h1>
           <p className="text-body-sm text-[#AAAAAA] mt-1">Super Admin</p>
         </div>
 

@@ -46,6 +46,7 @@ export interface Product {
   sku: string | null
   hsn_code: string | null
   created_at: string
+  has_active_stock?: boolean
 }
 
 export interface Batch {
